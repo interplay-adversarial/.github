@@ -1,0 +1,44 @@
+# Lives in <org>/.github/.github/workflows/pr-agent.yml (public repo, so any org repo can call it).
+name: PR Agent (reusable)
+on:
+  workflow_call:
+    inputs:
+      model:
+        type: string
+        default: qwen38-27b
+      api_base:
+        type: string
+        default: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/qwen38-27b/v1
+      max_tokens:
+        type: string
+        default: "32000"
+    secrets:
+      MAAS_API_KEY:
+        required: true
+
+permissions: {}
+
+jobs:
+  pr_agent:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    steps:
+      - name: PR Agent
+        # v0.47.0
+        uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
+          OPENAI.API_BASE: ${{ inputs.api_base }}
+          config.model: openai/${{ inputs.model }}
+          config.fallback_models: '["openai/${{ inputs.model }}"]'
+          config.custom_model_max_tokens: ${{ inputs.max_tokens }}
+          config.duplicate_examples: "true"
+          LITELLM.EXTRA_BODY: '{"chat_template_kwargs": {"enable_thinking": false}}'
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "false"
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review"]'
