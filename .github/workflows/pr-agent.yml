@@ -5,13 +5,13 @@ on:
     inputs:
       model:
         type: string
-        default: glm-53-flash
+        default: qwen38-27b
       api_base:
         type: string
-        default: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/glm-53-flash/v1
+        default: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/qwen38-27b/v1
       max_tokens:
         type: string
-        default: "32000"
+        default: "64000"
     secrets:
       MAAS_API_KEY:
         required: true
