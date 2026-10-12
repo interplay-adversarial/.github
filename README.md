@@ -14,7 +14,7 @@ Caller (`.github/workflows/pr-agent.yml` in a repo):
 name: PR Agent
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, review_requested]
   issue_comment:
     types: [created]
 
