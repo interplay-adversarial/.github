@@ -6,7 +6,7 @@ Shared, reusable GitHub Actions workflows for the org's repositories. This repo 
 
 Runs [PR-Agent](https://github.com/the-pr-agent/pr-agent) (pinned by commit SHA) on a hosted runner and calls an OpenAI-compatible model endpoint.
 
-Inputs: `model`, `api_base`, `max_tokens`. Secret: `MAAS_API_KEY`.
+Inputs: `model`, `api_base`, `max_tokens` (defaults: `qwen38-27b`, its MaaS per-model URL, 64000). `gemma4` is also served (131k context) but untested; use `with: {model: gemma4, api_base: .../prelude-maas/gemma4/v1}`. `glm-53-flash` fails: its reasoning leaks into the output and PR Agent cannot parse it. Secret: `MAAS_API_KEY`.
 
 Caller (`.github/workflows/pr-agent.yml` in a repo):
 
