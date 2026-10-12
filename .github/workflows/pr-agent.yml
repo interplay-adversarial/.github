@@ -40,5 +40,6 @@ jobs:
           LITELLM.EXTRA_BODY: '{"chat_template_kwargs": {"enable_thinking": false}}'
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
+          config.publish_description_as_comment: "true"   # keep the PR body (git-hygiene needs its sign-off line)
           github_action_config.auto_improve: "false"
           github_action_config.pr_actions: '["opened", "reopened", "ready_for_review"]'
