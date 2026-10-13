@@ -11,7 +11,7 @@ on:
         default: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/qwen38-27b/v1
       max_tokens:
         type: string
-        default: "64000"
+        default: "128000"
     secrets:
       MAAS_API_KEY:
         required: true
@@ -37,9 +37,18 @@ jobs:
           config.fallback_models: '["openai/${{ inputs.model }}"]'
           config.custom_model_max_tokens: ${{ inputs.max_tokens }}
           config.duplicate_examples: "true"
+          config.temperature: "0.1"                     # lower than the 0.2 default: fewer confident-but-wrong findings
+          config.patch_extra_lines_after: "3"            # more trailing hunk context per file (default 1)
           LITELLM.EXTRA_BODY: '{"chat_template_kwargs": {"enable_thinking": false}}'
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
           pr_description.publish_description_as_comment: "true"   # keep the PR body (git-hygiene needs its sign-off line)
           github_action_config.auto_improve: "false"
           github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
+          pr_reviewer.enable_large_pr_chunking: "true"   # split oversized diffs into multiple reviewed chunks instead of clipping/skipping files
+          pr_reviewer.max_number_of_calls: "6"           # default 3; allow more chunk calls to cover larger PRs
+          pr_reviewer.inline_key_issues: "true"          # anchor each finding to a specific file+line instead of free-text claims
+          pr_reviewer.extra_instructions: >-
+            Only report a finding if you can cite the exact file and line shown in the diff.
+            If the diff does not give enough context to be certain, say so explicitly instead
+            of asserting a defect. Never assume the behavior of code that is not shown in this diff.
