@@ -3,14 +3,13 @@ name: PR Agent (reusable)
 on:
   workflow_call:
     inputs:
+      # DEPRECATED, ignored: models are tried in a fixed order (glm-53-flash, qwen38-27b, gemma4).
       model:
         type: string
-        # TEMP (2026-10-23): qwen38-27b backend down on TMM MaaS; defaulting to gemma4
-        # until it recovers. Revert both defaults together.
-        default: gemma4
+        default: ""
       api_base:
         type: string
-        default: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/gemma4/v1
+        default: ""
       max_tokens:
         type: string
         default: "128000"
@@ -27,16 +26,80 @@ jobs:
       issues: write
       pull-requests: write
       contents: read
+    # Tried in order; a later model runs only if the previous step failed (the model gives
+    # unparseable output or the backend is down). Each model has its own MaaS path, so this is
+    # step-level fallback rather than litellm fallback_models, which share one api_base.
     steps:
-      - name: PR Agent
+      - name: PR Agent (glm-53-flash)
+        id: glm
+        continue-on-error: true
         # v0.47.0
         uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
-          OPENAI.API_BASE: ${{ inputs.api_base }}
-          config.model: openai/${{ inputs.model }}
-          config.fallback_models: '["openai/${{ inputs.model }}"]'
+          OPENAI.API_BASE: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/glm-53-flash/v1
+          config.model: openai/glm-53-flash
+          config.fallback_models: '["openai/glm-53-flash"]'
+          config.custom_model_max_tokens: ${{ inputs.max_tokens }}
+          config.duplicate_examples: "true"
+          config.temperature: "0.1"                     # lower than the 0.2 default: fewer confident-but-wrong findings
+          config.patch_extra_lines_after: "3"            # more trailing hunk context per file (default 1)
+          LITELLM.EXTRA_BODY: '{"chat_template_kwargs": {"enable_thinking": false}}'
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          pr_description.publish_description_as_comment: "true"   # keep the PR body (git-hygiene needs its sign-off line)
+          github_action_config.auto_improve: "false"
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
+          pr_reviewer.enable_large_pr_chunking: "true"   # split oversized diffs into multiple reviewed chunks instead of clipping/skipping files
+          pr_reviewer.max_number_of_calls: "6"           # default 3; allow more chunk calls to cover larger PRs
+          pr_reviewer.inline_key_issues: "true"          # anchor each finding to a specific file+line instead of free-text claims
+          pr_reviewer.extra_instructions: >-
+            Only report a finding if you can cite the exact file and line shown in the diff.
+            If the diff does not give enough context to be certain, say so explicitly instead
+            of asserting a defect. Never assume the behavior of code that is not shown in this diff.
+
+      - name: PR Agent (qwen38-27b)
+        id: qwen
+        if: steps.glm.outcome == 'failure'
+        continue-on-error: true
+        # v0.47.0
+        uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
+          OPENAI.API_BASE: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/qwen38-27b/v1
+          config.model: openai/qwen38-27b
+          config.fallback_models: '["openai/qwen38-27b"]'
+          config.custom_model_max_tokens: ${{ inputs.max_tokens }}
+          config.duplicate_examples: "true"
+          config.temperature: "0.1"                     # lower than the 0.2 default: fewer confident-but-wrong findings
+          config.patch_extra_lines_after: "3"            # more trailing hunk context per file (default 1)
+          LITELLM.EXTRA_BODY: '{"chat_template_kwargs": {"enable_thinking": false}}'
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          pr_description.publish_description_as_comment: "true"   # keep the PR body (git-hygiene needs its sign-off line)
+          github_action_config.auto_improve: "false"
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
+          pr_reviewer.enable_large_pr_chunking: "true"   # split oversized diffs into multiple reviewed chunks instead of clipping/skipping files
+          pr_reviewer.max_number_of_calls: "6"           # default 3; allow more chunk calls to cover larger PRs
+          pr_reviewer.inline_key_issues: "true"          # anchor each finding to a specific file+line instead of free-text claims
+          pr_reviewer.extra_instructions: >-
+            Only report a finding if you can cite the exact file and line shown in the diff.
+            If the diff does not give enough context to be certain, say so explicitly instead
+            of asserting a defect. Never assume the behavior of code that is not shown in this diff.
+
+      - name: PR Agent (gemma4)
+        id: gemma
+        if: steps.glm.outcome == 'failure' && steps.qwen.outcome == 'failure'
+        # v0.47.0
+        uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
+          OPENAI.API_BASE: https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/gemma4/v1
+          config.model: openai/gemma4
+          config.fallback_models: '["openai/gemma4"]'
           config.custom_model_max_tokens: ${{ inputs.max_tokens }}
           config.duplicate_examples: "true"
           config.temperature: "0.1"                     # lower than the 0.2 default: fewer confident-but-wrong findings
