@@ -33,8 +33,8 @@ jobs:
       - name: PR Agent (glm-53-flash)
         id: glm
         continue-on-error: true
-        # v0.47.0
-        uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
+        # v0.50.0
+        uses: the-pr-agent/pr-agent@e673a02076ce09a4726c3d0c3cc85780e59ca52b
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
@@ -63,8 +63,8 @@ jobs:
         id: qwen
         if: steps.glm.outcome == 'failure'
         continue-on-error: true
-        # v0.47.0
-        uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
+        # v0.50.0
+        uses: the-pr-agent/pr-agent@e673a02076ce09a4726c3d0c3cc85780e59ca52b
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
@@ -92,8 +92,8 @@ jobs:
       - name: PR Agent (gemma4)
         id: gemma
         if: steps.glm.outcome == 'failure' && steps.qwen.outcome == 'failure'
-        # v0.47.0
-        uses: the-pr-agent/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e
+        # v0.50.0
+        uses: the-pr-agent/pr-agent@e673a02076ce09a4726c3d0c3cc85780e59ca52b
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_KEY: ${{ secrets.MAAS_API_KEY }}
